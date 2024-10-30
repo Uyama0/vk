@@ -1,71 +1,44 @@
-import { List } from "antd";
+import { useEffect } from 'react';
 
-import { RepositorySnippet } from "entities/repositorySnippet";
+import { useQuery } from '@tanstack/react-query';
+import { observer } from 'mobx-react-lite';
 
-const repositories = [
-  {
-    id: 123,
-    name: "example-repo-1",
-    full_name: "username/example-repo-1",
-    description: "This is the first example repository.",
-    stargazers_count: 50,
-    forks_count: 10,
-    watchers_count: 20,
-    language: "JavaScript",
-    html_url: "https://github.com/username/example-repo-1",
-    owner: {
-      login: "username",
-      avatar_url: "https://avatars.githubusercontent.com/u/123456?v=4",
-    },
-  },
-  {
-    id: 124,
-    name: "example-repo-2",
-    full_name: "username/example-repo-2",
-    description: "This is the second example repository.",
-    stargazers_count: 25,
-    forks_count: 5,
-    watchers_count: 15,
-    language: "Python",
-    html_url: "https://github.com/username/example-repo-2",
-    owner: {
-      login: "username",
-      avatar_url: "https://avatars.githubusercontent.com/u/123456?v=4",
-    },
-  },
-  {
-    id: 125,
-    name: "example-repo-3",
-    full_name: "username/example-repo-3",
-    description: "This is the third example repository.",
-    watchers_count: 8,
-    language: "TypeScript",
-    html_url: "https://github.com/username/example-repo-3",
-    owner: {
-      login: "username",
-      avatar_url: "https://avatars.githubusercontent.com/u/123456?v=4",
-    },
-  },
-  {
-    id: 126,
-    name: "example-repo-4",
-    full_name: "username/example-repo-4",
-    description: "This is the fourth example repository.",
-    stargazers_count: 30,
-    forks_count: 7,
-    html_url: "https://github.com/username/example-repo-4",
-    owner: {
-      login: "username",
-      avatar_url: "https://avatars.githubusercontent.com/u/123456?v=4",
-    },
-  },
-];
+import { List } from 'antd';
 
-export const RepositoryList: React.FC = () => {
-  return (
-    <List
-      dataSource={repositories}
-      renderItem={(item) => <RepositorySnippet key={item.id} {...item} />}
-    />
+import { RepositorySnippet } from 'entities/repositorySnippet';
+import { LoadErrorWrapper } from 'shared/ui/loadErrorWrapper';
+import { repositoryStore } from 'app/store/repositoryStore';
+
+const getRepository = async () => {
+  const response = await fetch(
+    'https://api.github.com/search/repositories?q=javascript&per_page=10'
   );
+  if (!response.ok) {
+    throw new Error('Network response was not ok');
+  }
+  return await response.json();
 };
+
+export const RepositoryList: React.FC = observer(() => {
+  const { isLoading, error, data } = useQuery({
+    queryKey: ['getRepositoryData'],
+    queryFn: getRepository,
+  });
+
+  useEffect(() => {
+    if (data) {
+      repositoryStore.setRepositoryData(data.items);
+    }
+  }, [data]);
+
+  return (
+    <LoadErrorWrapper isLoading={isLoading} isError={new Error}>
+      <List
+        dataSource={repositoryStore.repositories}
+        size="large"
+        itemLayout="vertical"
+        renderItem={(item) => <RepositorySnippet key={item.id} {...item} />}
+      />
+    </LoadErrorWrapper>
+  );
+});

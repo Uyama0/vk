@@ -1,0 +1,7 @@
+.wrapper {
+  height: 100%;
+  width: 100%;
+  max-width: 968px;
+  margin: 0 auto;
+  background-color: inherit;
+}
